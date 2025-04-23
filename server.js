@@ -2,13 +2,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 app.use(cors());
-
-// Serve static files from the React build
-app.use(express.static(path.join(__dirname, 'build')));
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -18,14 +14,13 @@ const io = new Server(server, {
   }
 });
 
-// Socket.io connection handling
+// Simple health check route
+app.get('/', (req, res) => {
+  res.send('Socket.io server is running');
+});
+
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
-  
-  socket.on('join-room', (roomId) => {
-    socket.join(roomId);
-    console.log(`Socket ${socket.id} joined room: ${roomId}`);
-  });
   
   socket.on('draw', (data) => {
     socket.to(data.page).emit('draw', data);
@@ -47,22 +42,12 @@ io.on('connection', (socket) => {
     socket.to(data.page).emit('pageChanged', data);
   });
   
-  socket.on('leave-room', (roomId) => {
-    socket.leave(roomId);
-    console.log(`Socket ${socket.id} left room: ${roomId}`);
-  });
-  
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
 });
 
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
